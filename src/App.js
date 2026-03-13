@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
-
+import { supabase } from "./supabase";
 // ─── CONTEXT (shared real-time state across all components) ──────────────────
 const AppCtx = createContext(null);
 const useApp = () => useContext(AppCtx);
@@ -433,10 +433,23 @@ export default function App() {
   // ✅ All accounts live in React state — new registrations instantly visible everywhere
   const [accounts, setAccounts] = useState(SEED_ACCOUNTS);
   const [nexMeet, setNexMeet] = useState(null); // { roomCode, userName }
-  const [meetings, setMeetings] = useState(SEED_MEETINGS);
+  const [meetings, setMeetings] = useState([]);
   const [user,     setUser]     = useState(null);
   const [page,     setPage]     = useState("dashboard");
   const [toast,    setToast]    = useState(null);
+  useEffect(() => {
+  const fetchMeetings = async () => {
+    const { data, error } = await supabase
+      .from("meetings")
+      .select("*");
+
+    if (data) {
+      setMeetings(data);
+    }
+  };
+
+  fetchMeetings();
+}, []);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -497,13 +510,21 @@ function AuthScreen({ accounts, onLogin, onRegister }) {
 
   const clear = () => setErr("");
 
-  const handleLogin = () => {
-    const found = accounts.find(a => a.email === email.trim().toLowerCase() && a.password === pass);
-    if (!found) { setErr("Invalid email or password."); return; }
-    onLogin(found);
+  const handleLogin = async () => {
+    const { data, error } = await supabase
+  .from("users")
+  .select("*")
+  .eq("email", email.trim().toLowerCase())
+  .eq("password", pass)
+  .single();
+    if (!data) {
+  setErr("Invalid email or password.");
+  return;
+}
+onLogin(data);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !pass || !dept) { setErr("Please fill all fields."); return; }
     if (pass.length < 6) { setErr("Password must be at least 6 characters."); return; }
     if (accounts.find(a => a.email.toLowerCase() === email.trim().toLowerCase())) { setErr("Email already registered."); return; }
