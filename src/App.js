@@ -53,6 +53,7 @@ const RSVP_CFG = {
 
 
 // ─── NEXMEET HTML (embedded P2P video call) ───────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 const NEXMEET_HTML = (userName, roomCode) => `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -60,7 +61,7 @@ const NEXMEET_HTML = (userName, roomCode) => `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>NexMeet</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#07090f;--surf:#0e1420;--s2:#151d2b;--s3:#1b2537;--cyan:#00d4ff;--purple:#7c3aed;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--text:#dde6f0;--muted:#4d6070;--border:#1d2d3f}
@@ -383,7 +384,7 @@ function toggleSidebar(){const sb=document.getElementById('sidebar');sb.style.di
 function endCall(){call?.close();conn?.close();peer?.destroy();localStream?.getTracks().forEach(t=>t.stop());screenStream?.getTracks().forEach(t=>t.stop());clearInterval(timerInt);clearInterval(recInt);peer=conn=call=localStream=screenStream=null;micOn=true;camOn=true;handUp=false;recording=false;document.getElementById('meeting').style.display='none';document.getElementById('lobby').style.display='';document.getElementById('jbtn').disabled=false;document.getElementById('jbtn').textContent='🚀 Join Meeting';document.getElementById('cbtn').disabled=false;document.getElementById('cbtn').textContent='⚡ Start Meeting';document.getElementById('mtimer').textContent='00:00';setStat('Enter your name to get started','gray');toast('👋 You left the meeting');}
 function f2(n){return String(n).padStart(2,'0')}
 function toast(msg,d=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d);}
-<\/script>
+</script>
 </body>
 </html>`;
 
@@ -1462,7 +1463,7 @@ function NexMeetModal({ code, userName, onClose }) {
   const [isGuest,   setIsGuest]   = useState(false);
   const [myName,    setMyName]    = useState(userName || "");
   const [joinCode,  setJoinCode]  = useState(code || "");
-  const [hostCode,  setHostCode]  = useState(code || genNexCode());
+  const [hostCode] = useState(code || genNexCode());
   const [lobbyTab,  setLobbyTab]  = useState("join"); // join | create
   const [status,    setStatus]    = useState({ text:"Enter your name to get started", type:"gray" });
   const [peerName,  setPeerName]  = useState("");
