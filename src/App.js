@@ -590,20 +590,70 @@ function AuthScreen({ accounts, onLogin, onRegister }) {
 
   const clear = () => setErr("");
 
-  const handleLogin = () => {
-    // First check local accounts (seed data), then parent checks DB
-    const found = accounts.find(a => a.email === email.trim().toLowerCase() && a.password === pass);
-    if (found) { onLogin(found); return; }
-    // If not in local, try DB via parent with credentials
-    onLogin({ email: email.trim().toLowerCase(), password: pass });
+  const handleLogin = async () => {
+    if (!email.trim() || !pass) { setErr("Please enter email and password."); return; }
+    setErr("Signing in...");
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", email.trim().toLowerCase())
+        .eq("password", pass)
+        .single();
+
+      if (error || !data) {
+        setErr("Invalid email or password.");
+        return;
+      }
+      onLogin(data);
+    } catch(e) {
+      setErr("Login error: " + e.message);
+    }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !pass || !dept) { setErr("Please fill all fields."); return; }
     if (pass.length < 6) { setErr("Password must be at least 6 characters."); return; }
-    if (accounts.find(a => a.email.toLowerCase() === email.trim().toLowerCase())) { setErr("Email already registered."); return; }
-    const newUser = { id: Date.now(), name: name.trim(), email: email.trim().toLowerCase(), password: pass, role: "employee", avatar: mkInitials(name), dept };
-    onRegister(newUser);
+
+    setErr("Registering...");
+
+    try {
+      // Check if email already exists in Supabase
+      const { data: existing } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", email.trim().toLowerCase())
+        .single();
+
+      if (existing) { setErr("Email already registered."); return; }
+
+      // Insert new user into Supabase
+      const { data: created, error } = await supabase
+        .from("users")
+        .insert([{
+          name:     name.trim(),
+          email:    email.trim().toLowerCase(),
+          password: pass,
+          role:     "employee",
+          dept:     dept,
+          avatar:   mkInitials(name),
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Supabase register error:", error);
+        setErr("Registration failed: " + error.message);
+        return;
+      }
+
+      // Success — log in with the new user
+      onRegister(created);
+
+    } catch(e) {
+      console.error("Register exception:", e);
+      setErr("Error: " + e.message);
+    }
   };
 
   return (
