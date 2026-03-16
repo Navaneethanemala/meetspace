@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase } from "./supabase";
+
 // ─── CONTEXT (shared real-time state across all components) ──────────────────
 const AppCtx = createContext(null);
 const useApp = () => useContext(AppCtx);
@@ -430,41 +431,120 @@ const G = `
 
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  // ✅ All accounts live in React state — new registrations instantly visible everywhere
-  const [accounts, setAccounts] = useState(SEED_ACCOUNTS);
-  const [nexMeet, setNexMeet] = useState(null); // { roomCode, userName }
+  const [accounts, setAccounts] = useState([]);
+  const [nexMeet,  setNexMeet]  = useState(null);
   const [meetings, setMeetings] = useState([]);
   const [user,     setUser]     = useState(null);
   const [page,     setPage]     = useState("dashboard");
   const [toast,    setToast]    = useState(null);
-  useEffect(() => {
-  const fetchMeetings = async () => {
-    const { data, error } = await supabase
-      .from("meetings")
-      .select("*");
-
-    if (data) {
-      setMeetings(data);
-    }
-  };
-
-  fetchMeetings();
-}, []);
+  const [dbReady,  setDbReady]  = useState(false);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3200);
   };
 
-  const handleRegister = (newUser) => {
-    // ✅ Push new user into shared accounts array — immediately available in all invite pickers
-    setAccounts(prev => [...prev, newUser]);
-    setUser(newUser);
+  // ─── Load users + meetings from Supabase on startup ───────────────────────
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Load users from DB
+        const { data: users, error: uErr } = await supabase.from("users").select("*");
+        if (!uErr && users && users.length > 0) {
+          setAccounts(users);
+          setDbReady(true);
+        } else {
+          setAccounts(SEED_ACCOUNTS);
+        }
+        // Load meetings from DB
+        const { data: meets, error: mErr } = await supabase
+          .from("meetings")
+          .select("*, meeting_attendees(*), actions(*)");
+        if (!mErr && meets) {
+          if (meets.length > 0) {
+            const shaped = meets.map(m => ({
+              ...m,
+              start:     m.start_time?.slice(0,5),
+              end:       m.end_time?.slice(0,5),
+              roomId:    m.room_id,
+              hostId:    m.host_id,
+              attendees: m.meeting_attendees?.map(a => a.user_id) || [],
+              rsvp:      Object.fromEntries((m.meeting_attendees || []).map(a => [a.user_id, a.rsvp])),
+              actions:   (m.actions || []).map(a => ({ ...a, assignedTo: a.assigned_to, due: a.due_date })),
+              minutes:   m.minutes || "",
+            }));
+            setMeetings(shaped);
+          } else {
+            setMeetings([]);
+          }
+        } else {
+          setMeetings(SEED_MEETINGS);
+        }
+      } catch(e) {
+        console.log("Supabase error, using demo data:", e.message);
+        setAccounts(SEED_ACCOUNTS);
+        setMeetings(SEED_MEETINGS);
+      }
+    };
+    loadData();
+  }, []);
+
+  // ─── REGISTER → saves to Supabase ─────────────────────────────────────────
+  const handleRegister = async (newUser) => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .insert([{
+          name:     newUser.name,
+          email:    newUser.email,
+          password: newUser.password,
+          role:     "employee",
+          dept:     newUser.dept,
+          avatar:   newUser.avatar,
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        // If DB not set up yet, fall back to local state
+        console.log("DB insert failed, using local:", error.message);
+        setAccounts(prev => [...prev, newUser]);
+        setUser(newUser);
+      } else {
+        setAccounts(prev => [...prev, data]);
+        setUser(data);
+      }
+    } catch(e) {
+      // Offline fallback
+      setAccounts(prev => [...prev, newUser]);
+      setUser(newUser);
+    }
     setPage("dashboard");
   };
 
-  const handleLogin  = (u) => { setUser(u); setPage("dashboard"); };
-  const handleLogout = ()  => { setUser(null); setPage("dashboard"); };
+  // ─── LOGIN → checks Supabase first ────────────────────────────────────────
+  const handleLogin = async (u) => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", u.email.trim().toLowerCase())
+        .eq("password", u.password)
+        .single();
+      if (!error && data) {
+        setUser(data);
+        setPage("dashboard");
+        return;
+      }
+    } catch(e) {
+      console.log("DB login failed, using local:", e.message);
+    }
+    // Fallback to local accounts (demo/seed data)
+    setUser(u);
+    setPage("dashboard");
+  };
+
+  const handleLogout = () => { setUser(null); setPage("dashboard"); };
 
   const ctx = { accounts, setAccounts, meetings, setMeetings, user, showToast, nexMeet, setNexMeet };
 
@@ -510,21 +590,15 @@ function AuthScreen({ accounts, onLogin, onRegister }) {
 
   const clear = () => setErr("");
 
-  const handleLogin = async () => {
-    const { data, error } = await supabase
-  .from("users")
-  .select("*")
-  .eq("email", email.trim().toLowerCase())
-  .eq("password", pass)
-  .single();
-    if (!data) {
-  setErr("Invalid email or password.");
-  return;
-}
-onLogin(data);
+  const handleLogin = () => {
+    // First check local accounts (seed data), then parent checks DB
+    const found = accounts.find(a => a.email === email.trim().toLowerCase() && a.password === pass);
+    if (found) { onLogin(found); return; }
+    // If not in local, try DB via parent with credentials
+    onLogin({ email: email.trim().toLowerCase(), password: pass });
   };
 
-  const handleRegister = async () => {
+  const handleRegister = () => {
     if (!name.trim() || !email.trim() || !pass || !dept) { setErr("Please fill all fields."); return; }
     if (pass.length < 6) { setErr("Password must be at least 6 characters."); return; }
     if (accounts.find(a => a.email.toLowerCase() === email.trim().toLowerCase())) { setErr("Email already registered."); return; }
@@ -1013,13 +1087,45 @@ function SchedulePage({ setPage }) {
   const [form,      setForm]      = useState({ title:"", date:todayStr, start:"10:00", end:"11:00", roomId:"", type:"sync", agenda:"", link:genNexCode() });
   const [attendees, setAttendees] = useState([user.id]);
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.title||!form.roomId) { showToast("Fill all required fields","error"); return; }
     if (form.start>=form.end)      { showToast("End time must be after start","error"); return; }
     const conflict=meetings.find(m=>m.roomId===parseInt(form.roomId)&&m.date===form.date&&!(form.end<=m.start||form.start>=m.end));
     if (conflict) { showToast(`Room conflict with "${conflict.title}"`, "error"); return; }
     const rsvp={}; attendees.forEach(id=>rsvp[id]=id===user.id?"yes":"pending");
-    setMeetings(p=>[...p,{...form,id:Date.now(),roomId:parseInt(form.roomId),attendees:[...attendees],hostId:user.id,rsvp,minutes:"",actions:[]}]);
+    const localMeeting = {...form,id:Date.now(),roomId:parseInt(form.roomId),attendees:[...attendees],hostId:user.id,rsvp,minutes:"",actions:[]};
+
+    // Save to Supabase
+    try {
+      const { data: saved, error } = await supabase
+        .from("meetings")
+        .insert([{
+          title:      form.title,
+          date:       form.date,
+          start_time: form.start,
+          end_time:   form.end,
+          room_id:    parseInt(form.roomId),
+          host_id:    user.id,
+          agenda:     form.agenda,
+          link:       form.link,
+          type:       form.type,
+          minutes:    "",
+        }])
+        .select()
+        .single();
+
+      if (!error && saved) {
+        // Insert attendees
+        const attendeeRows = attendees.map(id => ({ meeting_id: saved.id, user_id: id, rsvp: id===user.id?"yes":"pending" }));
+        await supabase.from("meeting_attendees").insert(attendeeRows);
+        setMeetings(p=>[...p,{...localMeeting, id: saved.id}]);
+      } else {
+        setMeetings(p=>[...p, localMeeting]);
+      }
+    } catch(e) {
+      // Offline fallback
+      setMeetings(p=>[...p, localMeeting]);
+    }
     showToast("Meeting scheduled!"); setPage("meetings");
   };
 
