@@ -468,17 +468,15 @@ export default function App() {
               minutes:   m.minutes || "",
             }));
             setMeetings(shaped);
-          } else {
-            setMeetings([]);
-          }
-        } else {
-          setMeetings(SEED_MEETINGS);
-        }
-      } catch(e) {
-        console.log("Supabase error, using demo data:", e.message);
-        setAccounts(SEED_ACCOUNTS);
-        setMeetings(SEED_MEETINGS);
-      }
+         } else {
+  setMeetings([]);
+}
+
+} catch(e) {
+  console.log("Supabase error, using demo data:", e.message);
+  setAccounts(SEED_ACCOUNTS);
+  setMeetings([]);
+}
     };
     loadData();
   }, []);
