@@ -18,8 +18,8 @@ const ROOMS = [
   { id: 1, name: "Board Room",    capacity: 20, floor: "5th Floor", amenities: ["Projector","Whiteboard","VC Setup","AC"], img: "🏛️" },
   { id: 2, name: "Conference A",  capacity: 10, floor: "3rd Floor", amenities: ["Projector","Whiteboard","AC"],            img: "🖥️" },
   { id: 3, name: "Conference B",  capacity: 10, floor: "3rd Floor", amenities: ["TV Screen","Whiteboard","AC"],            img: "📺" },
-  { id: 4, name: "Huddle Room",   capacity:  6, floor: "2nd Floor", amenities: ["TV Screen","AC"],                         img: "💬" },
-  { id: 5, name: "Training Hall", capacity: 40, floor: "1st Floor", amenities: ["Projector","Mic System","AC","Stage"],    img: "🎓" },
+  { id: 4, name: "Conference C",   capacity:  6, floor: "2nd Floor", amenities: ["TV Screen","AC"],                         img: "💬" },
+  { id: 5, name: "Conference D", capacity: 40, floor: "1st Floor", amenities: ["Projector","Mic System","AC","Stage"],    img: "🎓" },
 ];
 
 const today    = new Date();
