@@ -24,7 +24,7 @@ const ROOMS = [
 
 const today    = new Date();
 const todayStr = today.toISOString().split("T")[0];
-const addDays  = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().split("T")[0]; };
+// remove this line completely
 const fmtTime  = (t) => { const [h, m] = t.split(":"); const hr = parseInt(h); return `${hr > 12 ? hr - 12 : hr === 0 ? 12 : hr}:${m} ${hr >= 12 ? "PM" : "AM"}`; };
 const fmtDate  = (d) => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { weekday:"short", day:"numeric", month:"short", year:"numeric" });
 const mkInitials = (name) => name.trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -431,8 +431,7 @@ export default function App() {
   const [user,     setUser]     = useState(null);
   const [page,     setPage]     = useState("dashboard");
   const [toast,    setToast]    = useState(null);
-  const [dbReady,  setDbReady]  = useState(false);
-
+ const [, setDbReady] = useState(...)
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3200);
