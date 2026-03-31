@@ -30,13 +30,7 @@ const fmtDate  = (d) => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { 
 const mkInitials = (name) => name.trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 const genNexCode = () => { const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; return Array.from({length:6},()=>a[Math.floor(Math.random()*a.length)]).join(""); };
 
-const SEED_MEETINGS = [
-  { id:1, title:"Q1 Project Review",       date:todayStr,   start:"10:00", end:"11:30", roomId:1, hostId:1, attendees:[1,2,3,4,5], agenda:"Review Q1 milestones\nDiscuss blockers\nPlan Q2 roadmap", minutes:"", actions:[{text:"Submit Q1 report",assignedTo:2,due:addDays(5),done:false}], rsvp:{1:"yes",2:"yes",3:"maybe",4:"no",5:"yes"},          link:"QREV26", type:"review"   },
-  { id:2, title:"Design Sync",             date:todayStr,   start:"14:00", end:"15:00", roomId:4, hostId:3, attendees:[1,3,5],     agenda:"UI feedback\nPrototype walkthrough",                       minutes:"", actions:[],                                                              rsvp:{1:"yes",3:"yes",5:"maybe"},                          link:"DSYNC4",          type:"sync"     },
-  { id:3, title:"Client Kickoff — Hitech", date:todayStr,   start:"16:00", end:"17:30", roomId:2, hostId:4, attendees:[1,4,2],     agenda:"Project scope\nTimeline\nBudget approval",                 minutes:"", actions:[],                                                              rsvp:{1:"yes",4:"yes",2:"pending"},                        link:"",                                 type:"kickoff"  },
-  { id:4, title:"Safety Training",         date:addDays(1), start:"09:00", end:"12:00", roomId:5, hostId:1, attendees:[1,2,3,4,5], agenda:"Safety protocols\nSite guidelines\nQ&A",                   minutes:"", actions:[],                                                              rsvp:{1:"yes",2:"yes",3:"yes",4:"yes",5:"yes"},            link:"",                                 type:"training" },
-  { id:5, title:"Budget Planning FY26",    date:addDays(2), start:"11:00", end:"13:00", roomId:2, hostId:5, attendees:[1,4,5],     agenda:"FY26 budget review\nDepartment allocations",              minutes:"", actions:[],                                                              rsvp:{1:"pending",4:"pending",5:"yes"},                    link:"BUDG26",          type:"planning" },
-];
+// Removed unused SEED_MEETINGS
 
 const TYPE_CFG = {
   review:   { color:"#2563eb", bg:"#dbeafe", label:"Review"   },
