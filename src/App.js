@@ -454,24 +454,26 @@ export default function App() {
         const { data: meets, error: mErr } = await supabase
           .from("meetings")
           .select("*, meeting_attendees(*), actions(*)");
-        if (!mErr && meets) {
-          if (meets.length > 0) {
-            const shaped = meets.map(m => ({
-              ...m,
-              start:     m.start_time?.slice(0,5),
-              end:       m.end_time?.slice(0,5),
-              roomId:    m.room_id,
-              hostId:    m.host_id,
-              attendees: m.meeting_attendees?.map(a => a.user_id) || [],
-              rsvp:      Object.fromEntries((m.meeting_attendees || []).map(a => [a.user_id, a.rsvp])),
-              actions:   (m.actions || []).map(a => ({ ...a, assignedTo: a.assigned_to, due: a.due_date })),
-              minutes:   m.minutes || "",
-            }));
-            setMeetings(shaped);
-         } else {
+  if (!mErr && meets) {
+  if (meets.length > 0) {
+    const shaped = meets.map(m => ({
+      ...m,
+      start:     m.start_time?.slice(0,5),
+      end:       m.end_time?.slice(0,5),
+      roomId:    m.room_id,
+      hostId:    m.host_id,
+      attendees: m.meeting_attendees?.map(a => a.user_id) || [],
+      rsvp:      Object.fromEntries((m.meeting_attendees || []).map(a => [a.user_id, a.rsvp])),
+      actions:   (m.actions || []).map(a => ({ ...a, assignedTo: a.assigned_to, due: a.due_date })),
+      minutes:   m.minutes || "",
+    }));
+    setMeetings(shaped);
+  } else {
+    setMeetings([]);
+  }
+} else {
   setMeetings([]);
 }
-
 } catch(e) {
   console.log("Supabase error, using demo data:", e.message);
   setAccounts(SEED_ACCOUNTS);
